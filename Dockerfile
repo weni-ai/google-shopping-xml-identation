@@ -27,4 +27,4 @@ COPY . /app/
 # EXPOSE 5000
 
 # Command to run the Flask app using Pipenv
-CMD ["pipenv", "run", "python", "app.py"]
+ENTRYPOINT ["pipenv", "run", "python", "app.py"]

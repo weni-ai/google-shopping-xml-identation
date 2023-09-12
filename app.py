@@ -1,5 +1,6 @@
 from flask import Flask, request, Response
 import requests
+import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
 app = Flask(__name__)
@@ -19,15 +20,18 @@ def get_indented_xml():
         if response.status_code != 200:
             return f"Failed to fetch XML from URL: {xml_url}", 500
 
-        # Parse the XML content
-        parsed_xml = minidom.parseString(response.text)
+        # Parse the XML content using ElementTree
+        root = ET.fromstring(response.content)
 
-        # Generate indented XML as a string
-        indented_xml = parsed_xml.toprettyxml(indent="  ")
+        # Create an indented XML string using minidom
+        xml_string = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
 
-        return Response(indented_xml, content_type='application/xml')
+        # Encode the XML string as UTF-8
+        encoded_xml = xml_string.encode('utf-8')
+
+        return Response(encoded_xml, content_type='application/xml; charset=utf-8')
     except Exception as e:
         return f"An error occurred: {str(e)}", 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
