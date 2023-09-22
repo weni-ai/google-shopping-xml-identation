@@ -42,8 +42,8 @@ def valor_unidade(id):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        retorno = response.content
-        data = json.loads(retorno)
+        result = response.content
+        data = json.loads(result)
         skus = data['skus']
         for sku in skus:
             id = str(data['productId'])
@@ -71,17 +71,17 @@ def get_value_unit(root):
     df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
 
     filtered_df = df.loc[df['product_type'].str.contains('Hortifrute|Carnes e Aves')]
-    filtered_df['valor_unidade'] = filtered_df['id_product'].apply(valor_unidade)
+    filtered_df['unit_value'] = filtered_df['id_product'].apply(valor_unidade)
 
     for element in root.findall('.//item'):
         product_id = element.find('id_product').text.strip()
         matching_row = filtered_df.loc[filtered_df['id_product'] == product_id]
         if matching_row.empty:
             continue  
-        valor_unidade = matching_row['valor_unidade'].values[0]
-        if valor_unidade == -1:
+        unit_value = matching_row['unit_value'].values[0]
+        if unit_value == -1:
             continue
-        element.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text = str(valor_unidade)
+        element.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text = str(unit_value)
     return(root)
 
 if __name__ == '__main__':
