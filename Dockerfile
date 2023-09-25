@@ -14,6 +14,10 @@ RUN pip install pipenv
 # Copy the Pipfile and Pipfile.lock into the container
 COPY Pipfile Pipfile.lock /app/
 
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
 # Explicitly specify the Python version (3.8) for pipenv
 RUN pipenv --python 3.8
 
