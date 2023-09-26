@@ -23,18 +23,49 @@ def get_indented_xml():
             return f"Failed to fetch XML from URL: {xml_url}", 500
 
         # Parse the XML content using ElementTree
-        root = ET.fromstring(response.content)
-        root = get_value_unit(root)
+        root = ET.fromstring(response.content) 
+        
+        item_data = []
 
-        # Create an indented XML string using minidom
-        xml_string = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
+        for item in root.findall('.//item'):
+          item_id_product = item.find('id_product').text.strip()
+          item_product_type = item.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text.strip()
+          item_data.append({'id_product': item_id_product, 'product_type': item_product_type})
 
+        df = pd.DataFrame(item_data)
+        df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
+
+        filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves')]
+        filtered_df.loc[:, 'unit_value'] = filtered_df['id_product'].apply(valor_unidade)
+
+
+        items = root.findall('.//item', namespaces={'g': 'http://base.google.com/ns/1.0'})
+
+        for item in items:
+            product_id = item.find('id_product').text.strip()
+            matching_row = filtered_df.loc[filtered_df['id_product'] == product_id]
+            if matching_row.empty:
+                continue
+            unit_value = matching_row['unit_value'].values[0]
+            if unit_value == -1:
+                continue
+            price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
+            if price_element is not None:
+                price_element.text = str(unit_value) 
+            
+        xml_atualizado = ET.tostring(root, encoding='utf-8')
+
+        # Parse string and indent
+        dom = minidom.parseString(xml_atualizado)
+        xml_string = dom.toprettyxml(indent="  ")
+        
         # Encode the XML string as UTF-8
         encoded_xml = xml_string.encode('utf-8')
 
         return Response(encoded_xml, content_type='application/xml; charset=utf-8')
     except Exception as e:
-        return f"An error occurred: {str(e)}", 500
+            return f"An error occurred: {str(e)}", 500
+
 
 def valor_unidade(id):
     url = f'https://prezunic.myvtex.com/api/catalog_system/pub/products/variations/{id}'
@@ -58,31 +89,6 @@ def valor_unidade(id):
 
     except (requests.exceptions.RequestException, ValueError, KeyError):
         return -1
-
-def get_value_unit(root):
-    item_data = []
-
-    for item in root.findall('.//item'):
-        item_id_product = item.find('id_product').text.strip()
-        item_product_type = item.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text.strip()
-        item_data.append({'id_product': item_id_product, 'product_type': item_product_type})
-
-    df = pd.DataFrame(item_data)
-    df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
-
-    filtered_df = df.loc[df['product_type'].str.contains('Hortifrute|Carnes e Aves')]
-    filtered_df['unit_value'] = filtered_df['id_product'].apply(valor_unidade)
-
-    for element in root.findall('.//item'):
-        product_id = element.find('id_product').text.strip()
-        matching_row = filtered_df.loc[filtered_df['id_product'] == product_id]
-        if matching_row.empty:
-            continue  
-        unit_value = matching_row['unit_value'].values[0]
-        if unit_value == -1:
-            continue
-        element.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text = str(unit_value)
-    return(root)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
