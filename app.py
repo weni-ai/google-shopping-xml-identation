@@ -36,7 +36,27 @@ def get_indented_xml():
         df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
 
         filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves')]
-        filtered_df.loc[:, 'unit_value'] = filtered_df['id_product'].apply(valor_unidade)
+        filtered_df['unit_value'] = np.nan
+
+        # Divide o DataFrame em partes iguais para processamento paralelo
+        num_cores = mp.cpu_count()
+        df_parts = np.array_split(filtered_df, num_cores)
+
+        # Cria um pool de processos com o número de núcleos disponíveis
+        pool = mp.Pool(num_cores)
+
+        # Aplica a função de processamento paralelo em cada parte do DataFrame
+        processed_parts = pool.map(process_part, df_parts)
+
+        # Combina as partes processadas em um único DataFrame
+        processed_df = pd.concat(processed_parts)
+
+        # Encerra o pool de processos
+        pool.close()
+        pool.join()
+
+        # Atualiza o DataFrame original com os valores processados
+        filtered_df['unit_value'] = processed_df['unit_value']
 
 
         items = root.findall('.//item', namespaces={'g': 'http://base.google.com/ns/1.0'})
@@ -83,12 +103,16 @@ def valor_unidade(id):
             if(unit_multiplier == 1.0):
               continue
             best_price = float(best_price_formatted.replace('R$', '').replace(',', '.'))
-            sku['bestPriceFormated'] = f'R$ {round(best_price * unit_multiplier)}'
+            sku['bestPriceFormated'] = f'R$ {round(best_price * unit_multiplier, 2)}'
 
         return sku['bestPriceFormated']
 
     except (requests.exceptions.RequestException, ValueError, KeyError):
         return -1
+
+def process_part(df_part):
+    df_part['unit_value'] = df_part.apply(lambda row: valor_unidade(row['id_product']), axis=1)
+    return df_part
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
