@@ -72,8 +72,13 @@ def get_indented_xml():
             if unit_value == -1:
                 continue
             price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
+            original_price = item.find('.//g:original_price', namespaces={'g': 'http://base.google.com/ns/1.0'})
+            nome_element = item.find('.//product_name')
             if price_element is not None:
-                price_element.text = str(unit_value) 
+                price_element.text = str(unit_value)
+                original_price.text = str(unit_value)
+                nome_element.text = (nome_element.text + ' Unidade')
+
             
         xml_atualizado = ET.tostring(root, encoding='utf-8')
 
@@ -103,7 +108,7 @@ def valor_unidade(id):
             best_price_formatted = sku['bestPriceFormated']
             unit_multiplier = sku['unitMultiplier']
             if(unit_multiplier == 1.0):
-              continue
+              return -1
             best_price = float(best_price_formatted.replace('R$', '').replace(',', '.'))
             sku['bestPriceFormated'] = f'R$ {round(best_price * unit_multiplier, 2)}'
 
