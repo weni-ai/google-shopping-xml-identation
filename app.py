@@ -13,7 +13,6 @@ app = Flask(__name__)
 def get_indented_xml():
     # Get the XML URL from the query parameter
     xml_url = request.args.get('xml_url')
-    amount = request.args.get('amount')
     amount = int(amount)
 
     if not xml_url:
@@ -38,7 +37,6 @@ def get_indented_xml():
 
         df = pd.DataFrame(item_data)
         df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
-        df = df[(amount-500):amount]
         df = df.drop(df[df['product_type'].str.contains('Bebida Alcoólica')].index)
         filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves|')]
         filtered_df['unit_value'] = np.nan
