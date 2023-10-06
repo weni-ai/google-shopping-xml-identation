@@ -14,6 +14,7 @@ def get_indented_xml():
     # Get the XML URL from the query parameter
     xml_url = request.args.get('xml_url')
     amount = request.args.get('amount')
+    amount = int(amount)
 
     if not xml_url:
         return "XML URL is missing in the query parameter", 400
