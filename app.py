@@ -13,7 +13,6 @@ app = Flask(__name__)
 def get_indented_xml():
     # Get the XML URL from the query parameter
     xml_url = request.args.get('xml_url')
-    amount = int(amount)
 
     if not xml_url:
         return "XML URL is missing in the query parameter", 400
@@ -26,8 +25,8 @@ def get_indented_xml():
             return f"Failed to fetch XML from URL: {xml_url}", 500
 
         # Parse the XML content using ElementTree
-        root = ET.fromstring(response.content) 
-        
+        root = ET.fromstring(response.content)
+
         item_data = []
 
         for item in root.findall('.//item'):
@@ -37,8 +36,7 @@ def get_indented_xml():
 
         df = pd.DataFrame(item_data)
         df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
-        df = df.drop(df[df['product_type'].str.contains('Bebida Alcoólica')].index)
-        filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves|')]
+        filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves|Frios e Laticínios|Padaria')]
         filtered_df['unit_value'] = np.nan
         filtered_df['weight'] = np.nan
 
@@ -54,29 +52,11 @@ def get_indented_xml():
 
         # Combina as partes processadas em um único DataFrame
         processed_df = pd.concat(processed_parts)
-
         # Encerra o pool de processos
         pool.close()
         pool.join()
-
         # Atualiza o DataFrame original com os valores processados
         filtered_df['unit_value'] = processed_df['unit_value']
-
-
-        num_cores = mp.cpu_count()
-        df_parts = np.array_split(filtered_df, num_cores)
-
-        # Cria um pool de processos com o número de núcleos disponíveis
-        pool = mp.Pool(num_cores)
-        # Aplica a função de processamento paralelo em cada parte do DataFrame
-        processed_parts = pool.map(process_part_weight, df_parts)
-        # Combina as partes processadas em um único DataFrame
-        processed_df = pd.concat(processed_parts)
-
-        # Encerra o pool de processos
-        pool.close()
-        pool.join()
-
         # Atualiza o DataFrame original com os valores processados
         filtered_df['weight'] = processed_df['weight']
 
@@ -88,11 +68,10 @@ def get_indented_xml():
             if matching_row.empty:
                 continue
             unit_value = matching_row['unit_value'].values[0]
-            weight = matching_row['weight'].values[0]  
-            
-            if unit_value == -1:
+            weight = matching_row['weight'].values[0]
+
+            if unit_value == None:
                 continue
-            print('as')  
             price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             original_price = item.find('.//g:original_price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             nome_element = item.find('.//product_name')
@@ -101,17 +80,16 @@ def get_indented_xml():
                 price_element.text = str(unit_value)
                 original_price.text = str(unit_value)
                 nome_element.text = (nome_element.text + ' Unidadex')
-                if weight == -1:
+                if weight == None:
                   continue
-                print('ccc')
                 tax_price.text = str(f'{weight} g')
- 
+
         xml_atualizado = ET.tostring(root, encoding='utf-8')
 
         # Parse string and indent
         dom = minidom.parseString(xml_atualizado)
         xml_string = dom.toprettyxml(indent="  ")
-        
+
         # Encode the XML string as UTF-8
         encoded_xml = xml_string.encode('utf-8')
 
@@ -133,45 +111,20 @@ def valor_unidade(id):
             id = str(data['productId'])
             best_price_formatted = sku['bestPriceFormated']
             unit_multiplier = sku['unitMultiplier']
-            if(unit_multiplier == 1.0):
-              return -1
+            weight = sku['measures']['weight']
+            if unit_multiplier == 1.0:
+                return None, None  # Retorna None se o unit_multiplier for 1.0
             best_price = float(best_price_formatted.replace('R$', '').replace(',', '.'))
             sku['bestPriceFormated'] = f'R$ {round(best_price * unit_multiplier, 2)}'
-        print(sku['bestPriceFormated'], id)
-        return sku['bestPriceFormated']
-
-    except (requests.exceptions.RequestException, ValueError, KeyError):
-        return -1
-
-def peso_unidade(id):
-    url = f'https://prezunic.myvtex.com/api/catalog_system/pub/products/variations/{id}'
-
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        result = response.content
-        data = json.loads(result)
-        skus = data['skus']
-        for sku in skus:
-            id = str(data['productId'])
-            weight = sku['measures']['weight']
-            unit_multiplier = sku['unitMultiplier']
-            if(unit_multiplier == 1.0):
-              return -1
             weight = float(weight)
             sku['measures']['weight'] = f'{round(weight * unit_multiplier)}'
-
-        return sku['measures']['weight']
+            return sku['bestPriceFormated'], sku['measures']['weight']
 
     except (requests.exceptions.RequestException, ValueError, KeyError):
-        return -1
+        return None, None  # Retorna None em caso de erro
 
 def process_part(df_part):
-    df_part['unit_value'] = df_part.apply(lambda row: valor_unidade(row['id_product']), axis=1)
-    return df_part
-
-def process_part_weight(df_part):
-    df_part['weight'] = df_part.apply(lambda row: peso_unidade(row['id_product']), axis=1)
+    df_part[['unit_value', 'weight']] = df_part.apply(lambda row: pd.Series(valor_unidade(row['id_product'])), axis=1)
     return df_part
 
 if __name__ == '__main__':
