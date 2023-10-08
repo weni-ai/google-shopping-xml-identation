@@ -75,14 +75,17 @@ def get_indented_xml():
             price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             original_price = item.find('.//g:original_price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             nome_element = item.find('.//product_name')
-            tax_price = item.find('.//g:tax_price', namespaces={'g': 'http://base.google.com/ns/1.0'})
+            description = item.find('.//description')
             if price_element is not None:
                 price_element.text = str(unit_value)
                 original_price.text = str(unit_value)
-                nome_element.text = (nome_element.text + ' Unidadex')
+                nome_element.text = (nome_element.text + ' Unidades')
                 if weight == None:
                   continue
-                tax_price.text = str(f'{weight} g')
+                weight = str(weight)
+                description.text = (description.text + ' Aprox. ' + weight)
+
+                            
 
         xml_atualizado = ET.tostring(root, encoding='utf-8')
 
@@ -117,7 +120,7 @@ def valor_unidade(id):
             best_price = float(best_price_formatted.replace('R$', '').replace(',', '.'))
             sku['bestPriceFormated'] = f'R$ {round(best_price * unit_multiplier, 2)}'
             weight = float(weight)
-            sku['measures']['weight'] = f'{round(weight * unit_multiplier)}'
+            sku['measures']['weight'] = f'{round(weight * unit_multiplier)}g'
             return sku['bestPriceFormated'], sku['measures']['weight']
 
     except (requests.exceptions.RequestException, ValueError, KeyError):
