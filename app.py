@@ -82,7 +82,7 @@ def get_indented_xml():
                 if weight == None:
                   continue
                 weight = str(weight)
-                description.text = (description.text + ' Aprox. ' + weight + ', Preço do Kilo: ' + original_price.text)
+                description.text = (description.text + ' Aprox. ' + weight + ', Preço do KG: ' + original_price.text)
                 original_price.text = str(unit_value)   
                 matching_row = meat_df.loc[meat_df['id_product'] == product_id]
                 if matching_row.empty:
