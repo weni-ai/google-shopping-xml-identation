@@ -37,6 +37,7 @@ def get_indented_xml():
         df = pd.DataFrame(item_data)
         df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
         filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves|Frios e Laticínios|Padaria')]
+        meat_df = df.loc[df['product_type'].str.contains('Carnes e Aves')]
         filtered_df['unit_value'] = np.nan
         filtered_df['weight'] = np.nan
 
@@ -69,23 +70,25 @@ def get_indented_xml():
                 continue
             unit_value = matching_row['unit_value'].values[0]
             weight = matching_row['weight'].values[0]
-
             if unit_value == None:
                 continue
             price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             original_price = item.find('.//g:original_price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             nome_element = item.find('.//product_name')
             description = item.find('.//description')
+
             if price_element is not None:
-                price_element.text = str(unit_value)
-                original_price.text = str(unit_value)
-                nome_element.text = (nome_element.text + ' Unidades')
+                price_element.text = str(unit_value)  
                 if weight == None:
                   continue
                 weight = str(weight)
-                description.text = (description.text + ' Aprox. ' + weight)
+                description.text = (description.text + ' Aprox. ' + weight + ', Preço do Kilo: ' + original_price.text)
+                original_price.text = str(unit_value)   
+                matching_row = meat_df.loc[meat_df['id_product'] == product_id]
+                if matching_row.empty:
+                  nome_element.text = (nome_element.text + ' Unidade')
 
-                            
+
 
         xml_atualizado = ET.tostring(root, encoding='utf-8')
 
