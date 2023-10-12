@@ -38,12 +38,14 @@ def get_indented_xml():
         df['product_type'] = df['product_type'].str.split('> ', n=1).str[0]
         filtered_df = df.loc[df['product_type'].str.contains('Hortifruti|Carnes e Aves|Frios e Laticínios|Padaria')]
         meat_df = df.loc[df['product_type'].str.contains('Carnes e Aves')]
+        drink_df = df.loc[df['product_type'].str.contains('Bebida Alcoólica')]
         filtered_df['unit_value'] = np.nan
         filtered_df['weight'] = np.nan
 
         # Divide o DataFrame em partes iguais para processamento paralelo
         num_cores = mp.cpu_count()
         df_parts = np.array_split(filtered_df, num_cores)
+
 
         # Cria um pool de processos com o número de núcleos disponíveis
         pool = mp.Pool(num_cores)
@@ -67,6 +69,11 @@ def get_indented_xml():
             product_id = item.find('id_product').text.strip()
             matching_row = filtered_df.loc[filtered_df['id_product'] == product_id]
             if matching_row.empty:
+                matching_row = drink_df.loc[drink_df['id_product'] == product_id]
+                if matching_row.empty:
+                  continue
+                product_id = item.find('id_product')
+                product_id.text = 'A'
                 continue
             unit_value = matching_row['unit_value'].values[0]
             weight = matching_row['weight'].values[0]
@@ -78,12 +85,12 @@ def get_indented_xml():
             description = item.find('.//description')
 
             if price_element is not None:
-                price_element.text = str(unit_value)  
+                price_element.text = str(unit_value)
                 if weight == None:
                   continue
                 weight = str(weight)
                 description.text = (description.text + ' Aprox. ' + weight + ', Preço do KG: ' + original_price.text)
-                original_price.text = str(unit_value)   
+                original_price.text = str(unit_value)
                 matching_row = meat_df.loc[meat_df['id_product'] == product_id]
                 if matching_row.empty:
                   nome_element.text = (nome_element.text + ' Unidade')
