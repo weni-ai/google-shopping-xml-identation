@@ -41,6 +41,14 @@ def get_indented_xml():
         drink_df = df.loc[df['product_type'].str.contains('Bebida Alcoólica')]
         filtered_df['unit_value'] = np.nan
         filtered_df['weight'] = np.nan
+        store_columns = [
+        'prezunicb708', 'prezunicb710', 'prezunicb713', 'prezunicb716',
+        'prezunicb718', 'prezunicb722', 'prezunicb728', 'prezunicb731',
+        'prezunicb734', 'prezunicb742', 'prezunicb745', 'prezunicb747'
+        ]
+
+        for column in store_columns:
+            filtered_df[column] = np.nan
 
         # Divide o DataFrame em partes iguais para processamento paralelo
         num_cores = mp.cpu_count()
