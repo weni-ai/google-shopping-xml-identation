@@ -221,8 +221,6 @@ def get_indented_xml_bretas():
                 matching_row = drink_df.loc[drink_df['id_product'] == product_id]
                 if matching_row.empty:
                   continue
-                product_id = item.find('id')
-                product_id.text = 'A'
                 continue
             unit_value = matching_row['unit_value'].values[0]
             weight = matching_row['weight'].values[0]
@@ -231,24 +229,16 @@ def get_indented_xml_bretas():
             price_element = item.find('.//g:price', namespaces={'g': 'http://base.google.com/ns/1.0'})
             original_price = item.find('.//g:amount', namespaces={'g': 'http://base.google.com/ns/1.0'})
             nome_element = item.find('.//title')
-            description = item.find('.//description')
-            title = item.find('.//title')
 
             if price_element is not None:
                 price_element.text = str(unit_value)
                 if weight == None:
                   continue
                 weight = str(weight)
-                print(description.text)
-                print(weight)
-                description.text = title
-                print('b')
                 original_price.text = str(unit_value)
-                print('d')
                 matching_row = meat_df.loc[meat_df['id_product'] == product_id]
                 if matching_row.empty:
                   nome_element.text = (nome_element.text + ' Unidade')
-                  print('c')
 
 
 
@@ -297,4 +287,3 @@ def process_part_bretas(df_part):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
