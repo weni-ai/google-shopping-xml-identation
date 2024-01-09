@@ -197,7 +197,7 @@ def get_indented_xml_bretas():
         pool = mp.Pool(num_cores)
 
         # Aplica a função de processamento paralelo em cada parte do DataFrame
-        processed_parts = pool.map(valor_unidade_bretas, df_parts)
+        processed_parts = pool.map(process_part_bretas, df_parts)
 
         # Combina as partes processadas em um único DataFrame
         processed_df = pd.concat(processed_parts)
