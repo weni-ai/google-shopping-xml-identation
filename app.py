@@ -154,7 +154,6 @@ def process_part(df_part):
 
 @app.route('/get_indented_xml_bretas', methods=['GET'])
 def get_indented_xml_bretas():
-    def get_indented_xml():
     # Get the XML URL from the query parameter
     xml_url = request.args.get('xml_url')
 
@@ -289,3 +288,4 @@ def process_part_bretas(df_part):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
