@@ -209,8 +209,6 @@ def get_indented_xml_bretas():
         items = root.findall('.//item', namespaces={'g': 'http://base.google.com/ns/1.0'})
         for item in items:
             product_id = item.find('id_product').text.strip()
-            id = item.find('id')
-            id.text = product_id
             matching_row = filtered_df.loc[filtered_df['id_product'] == product_id]
             if matching_row.empty:
                 matching_row = drink_df.loc[drink_df['id_product'] == product_id]
