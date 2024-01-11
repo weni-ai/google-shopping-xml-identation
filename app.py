@@ -51,9 +51,6 @@ def get_indented_xml():
         filtered_df['unit_value'] = np.nan
         filtered_df['weight'] = np.nan
 
-        for column in drink_df:
-            filtered_df[column] = np.nan
-
         # Divide o DataFrame em partes iguais para processamento paralelo
         num_cores = mp.cpu_count()
         df_parts = np.array_split(filtered_df, num_cores)
