@@ -37,7 +37,6 @@ def get_indented_xml():
         root = ET.fromstring(response.content)
 
         item_data = []
-
         for item in root.findall('.//item'):
           item_id_product = item.find('id_product').text.strip()
           item_product_type = item.find('g:product_type', namespaces={'g': 'http://base.google.com/ns/1.0'}).text.strip()
